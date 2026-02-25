@@ -1,0 +1,20 @@
+{
+  "polling_timeout_seconds": 50,
+  "polling_limit": 100,
+  "backend_timeout_seconds": 10,
+  "telegram_timeout_seconds": 10,
+  "retry_initial_delay_ms": 1000,
+  "retry_max_delay_ms": 30000,
+  "sqlite_path": "./data/bridge.sqlite3",
+  "user_agent": "tg-getupdates-to-webhook/1.0",
+  "bots": [
+    {
+      "name": "legacy-bot-1",
+      "token": "${BOT_1_TOKEN}",
+      "backend_url": "http://localhost:8081/webhook",
+      "secret_token": "optional-shared-secret",
+      "allowed_updates": ["message", "callback_query"],
+      "drop_pending_updates": false
+    }
+  ]
+}
