@@ -36,6 +36,7 @@ type Service struct {
 	cfg           config.Config
 	tg            TelegramAPI
 	store         StateStore
+	metrics       *runtimeMetrics
 	backendClient *http.Client
 	logger        *slog.Logger
 }
@@ -57,6 +58,7 @@ func NewService(cfg config.Config, tg TelegramAPI, store StateStore, backendClie
 		cfg:           cfg,
 		tg:            tg,
 		store:         store,
+		metrics:       newRuntimeMetrics(cfg.Bots),
 		backendClient: backendClient,
 		logger:        logger,
 	}
@@ -104,6 +106,7 @@ func (service *Service) runBot(ctx context.Context, bot config.BotConfig) error 
 	if err != nil {
 		return fmt.Errorf("load offset from sqlite: %w", err)
 	}
+	service.metrics.setOffset(bot.Name, offset)
 
 	if err := service.logInteraction(ctx, storage.InteractionLog{
 		BotName:   bot.Name,
@@ -134,6 +137,8 @@ func (service *Service) runBot(ctx context.Context, bot config.BotConfig) error 
 		request.Offset = offset
 		updates, err := service.tg.GetUpdates(ctx, bot.Token, request)
 		if err != nil {
+			service.metrics.incTelegramError(bot.Name, err)
+
 			if logErr := service.logInteraction(ctx, storage.InteractionLog{
 				BotName:   bot.Name,
 				Component: "telegram",
@@ -175,6 +180,7 @@ func (service *Service) runBot(ctx context.Context, bot config.BotConfig) error 
 			if err != nil {
 				return fmt.Errorf("extract update_id: %w", err)
 			}
+			service.metrics.observeUpdate(bot.Name, updateID)
 
 			if err := service.logInteraction(ctx, storage.InteractionLog{
 				BotName:   bot.Name,
@@ -208,6 +214,7 @@ func (service *Service) runBot(ctx context.Context, bot config.BotConfig) error 
 			}
 
 			offset = nextOffset
+			service.metrics.setOffset(bot.Name, nextOffset)
 			backoff.Reset()
 		}
 
@@ -222,6 +229,8 @@ func (service *Service) ensurePollingMode(ctx context.Context, bot config.BotCon
 
 	for {
 		if err := service.tg.DeleteWebhook(ctx, bot.Token, bot.DropPendingUpdates); err != nil {
+			service.metrics.incTelegramError(bot.Name, err)
+
 			if logErr := service.logInteraction(ctx, storage.InteractionLog{
 				BotName:   bot.Name,
 				Component: "telegram",
@@ -278,6 +287,8 @@ func (service *Service) deliverUpdate(ctx context.Context, bot config.BotConfig,
 
 	response, err := service.backendClient.Do(request)
 	if err != nil {
+		service.metrics.incBackendError(bot.Name, err)
+
 		if logErr := service.logInteraction(ctx, storage.InteractionLog{
 			BotName:   bot.Name,
 			Component: "backend",
@@ -309,11 +320,14 @@ func (service *Service) deliverUpdate(ctx context.Context, bot config.BotConfig,
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		service.metrics.incBackendError(bot.Name, fmt.Errorf("backend returned HTTP %d", response.StatusCode))
 		return fmt.Errorf("backend returned HTTP %d", response.StatusCode)
 	}
 
 	method, payload, hasMethod, parseErr := parseWebhookReply(body)
 	if parseErr != nil {
+		service.metrics.incBackendError(bot.Name, parseErr)
+
 		if logErr := service.logInteraction(ctx, storage.InteractionLog{
 			BotName:   bot.Name,
 			Component: "bridge",
@@ -369,6 +383,7 @@ func (service *Service) deliverUpdate(ctx context.Context, bot config.BotConfig,
 	}); logErr != nil {
 		return logErr
 	}
+	service.metrics.incTelegramError(bot.Name, err)
 
 	var apiErr *telegram.APIError
 	if errors.As(err, &apiErr) && !apiErr.Temporary {

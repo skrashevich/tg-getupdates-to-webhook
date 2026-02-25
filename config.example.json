@@ -6,6 +6,7 @@
   "retry_initial_delay_ms": 1000,
   "retry_max_delay_ms": 30000,
   "sqlite_path": "./data/bridge.sqlite3",
+  "health_listen_addr": ":9090",
   "user_agent": "tg-getupdates-to-webhook/1.0",
   "bots": [
     {

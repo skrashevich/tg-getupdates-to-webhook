@@ -14,6 +14,7 @@ Some legacy bots only know how to handle webhook delivery and return inline Bot 
 - Proxies webhook response payloads with `method` field back to Telegram Bot API
 - Persists per-bot offsets in SQLite (`bot_offsets` table)
 - Persists interaction logs in SQLite (`interaction_logs` table)
+- Exposes `/healthz` with runtime counters and lag metrics
 - Uses retry with exponential backoff for temporary failures
 
 ## Important behavior
@@ -34,7 +35,15 @@ Environment variables inside config are expanded (for example `"token": "${BOT_1
 Important config fields:
 
 - `sqlite_path` - path to SQLite DB file (created automatically)
+- `health_listen_addr` - bind address for health endpoint (for example `":9090"`)
 - `bots[].name` - unique bot identifier (used as key in `bot_offsets`)
+
+## Health endpoint
+
+- `GET /healthz` returns JSON with:
+  - global `telegram_errors_total` and `backend_errors_total`
+  - per-bot counters
+  - per-bot `lag_by_offset` (computed as `(last_update_id + 1) - offset`, minimum `0`)
 
 ## Run
 

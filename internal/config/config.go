@@ -19,6 +19,7 @@ const (
 	defaultRetryInitialDelayMs    = 1000
 	defaultRetryMaxDelayMs        = 30000
 	defaultSQLitePath             = "bridge.sqlite3"
+	defaultHealthListenAddr       = ":9090"
 	defaultUserAgent              = "tg-getupdates-to-webhook/1.0"
 )
 
@@ -30,6 +31,7 @@ type Config struct {
 	RetryInitialDelay time.Duration
 	RetryMaxDelay     time.Duration
 	SQLitePath        string
+	HealthListenAddr  string
 	UserAgent         string
 	Bots              []BotConfig
 }
@@ -51,6 +53,7 @@ type fileConfig struct {
 	RetryInitialDelayMs    int         `json:"retry_initial_delay_ms"`
 	RetryMaxDelayMs        int         `json:"retry_max_delay_ms"`
 	SQLitePath             string      `json:"sqlite_path"`
+	HealthListenAddr       string      `json:"health_listen_addr"`
 	UserAgent              string      `json:"user_agent"`
 	Bots                   []BotConfig `json:"bots"`
 }
@@ -80,6 +83,7 @@ func Load(path string) (Config, error) {
 		RetryInitialDelay: time.Duration(raw.RetryInitialDelayMs) * time.Millisecond,
 		RetryMaxDelay:     time.Duration(raw.RetryMaxDelayMs) * time.Millisecond,
 		SQLitePath:        raw.SQLitePath,
+		HealthListenAddr:  raw.HealthListenAddr,
 		UserAgent:         raw.UserAgent,
 		Bots:              raw.Bots,
 	}
@@ -118,6 +122,11 @@ func normalizeDefaults(raw *fileConfig) {
 	raw.SQLitePath = strings.TrimSpace(raw.SQLitePath)
 	if raw.SQLitePath == "" {
 		raw.SQLitePath = defaultSQLitePath
+	}
+
+	raw.HealthListenAddr = strings.TrimSpace(raw.HealthListenAddr)
+	if raw.HealthListenAddr == "" {
+		raw.HealthListenAddr = defaultHealthListenAddr
 	}
 
 	raw.UserAgent = strings.TrimSpace(raw.UserAgent)
