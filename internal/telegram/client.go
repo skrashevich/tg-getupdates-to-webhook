@@ -27,6 +27,27 @@ type GetUpdatesRequest struct {
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
 }
 
+type WebhookInfo struct {
+	URL                          string   `json:"url"`
+	HasCustomCertificate         bool     `json:"has_custom_certificate"`
+	PendingUpdateCount           int      `json:"pending_update_count"`
+	IPAddress                    string   `json:"ip_address,omitempty"`
+	LastErrorDate                int64    `json:"last_error_date,omitempty"`
+	LastErrorMessage             string   `json:"last_error_message,omitempty"`
+	LastSynchronizationErrorDate int64    `json:"last_synchronization_error_date,omitempty"`
+	MaxConnections               int      `json:"max_connections,omitempty"`
+	AllowedUpdates               []string `json:"allowed_updates,omitempty"`
+}
+
+type BotUser struct {
+	ID           int64  `json:"id"`
+	IsBot        bool   `json:"is_bot"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name,omitempty"`
+	Username     string `json:"username,omitempty"`
+	LanguageCode string `json:"language_code,omitempty"`
+}
+
 type APIError struct {
 	Method      string
 	Description string
@@ -92,6 +113,24 @@ func (client *Client) DeleteWebhook(ctx context.Context, token string, dropPendi
 	return nil
 }
 
+func (client *Client) GetWebhookInfo(ctx context.Context, token string) (WebhookInfo, error) {
+	var webhookInfo WebhookInfo
+	if err := client.callAndDecode(ctx, token, "getWebhookInfo", []byte("{}"), &webhookInfo); err != nil {
+		return WebhookInfo{}, err
+	}
+
+	return webhookInfo, nil
+}
+
+func (client *Client) GetMe(ctx context.Context, token string) (BotUser, error) {
+	var botUser BotUser
+	if err := client.callAndDecode(ctx, token, "getMe", []byte("{}"), &botUser); err != nil {
+		return BotUser{}, err
+	}
+
+	return botUser, nil
+}
+
 func (client *Client) GetUpdates(ctx context.Context, token string, request GetUpdatesRequest) ([]json.RawMessage, error) {
 	requestBody, err := json.Marshal(request)
 	if err != nil {
@@ -125,6 +164,24 @@ func (client *Client) CallMethodRaw(ctx context.Context, token, method string, p
 	_, err := client.call(ctx, token, method, trimmedPayload)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (client *Client) callAndDecode(ctx context.Context, token, method string, payload []byte, target any) error {
+	result, err := client.call(ctx, token, method, payload)
+	if err != nil {
+		return err
+	}
+
+	trimmed := bytes.TrimSpace(result)
+	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+		return nil
+	}
+
+	if err := json.Unmarshal(trimmed, target); err != nil {
+		return fmt.Errorf("decode %s result: %w", method, err)
 	}
 
 	return nil
