@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tg-getupdates-to-webhook/internal/config"
+	"github.com/skrashevich/tg-getupdates-to-webhook/config"
 )
 
 func TestHealthHandlerReturnsCountersAndLag(t *testing.T) {

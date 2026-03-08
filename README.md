@@ -13,6 +13,74 @@ The service reads updates via Telegram `getUpdates`, forwards them to your exist
 - Health endpoint `GET /healthz` with error counters and lag metrics
 - Retry with exponential backoff for temporary failures
 - Built-in bootstrap command `init-config` for webhook -> polling migration
+- Can be used as a Go library (all packages are importable)
+
+## Using as a library
+
+All packages (`config`, `telegram`, `storage`, `bridge`, `bootstrap`) are importable from external Go projects.
+
+```bash
+go get github.com/skrashevich/tg-getupdates-to-webhook
+```
+
+### Packages
+
+| Package | Description |
+|---------|-------------|
+| `config` | Load and validate JSON configuration with env var expansion |
+| `telegram` | Telegram Bot API client (`getUpdates`, `deleteWebhook`, `getMe`, generic method calls) |
+| `storage` | SQLite-based offset persistence and interaction logging |
+| `bridge` | Core bridge service: polls Telegram, delivers updates to backend, proxies webhook replies |
+| `bootstrap` | Config generation: reads webhook info, switches bot to polling, writes config file |
+
+### Example: embed bridge in your application
+
+```go
+package main
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+
+	"github.com/skrashevich/tg-getupdates-to-webhook/bridge"
+	"github.com/skrashevich/tg-getupdates-to-webhook/config"
+	"github.com/skrashevich/tg-getupdates-to-webhook/storage"
+	"github.com/skrashevich/tg-getupdates-to-webhook/telegram"
+)
+
+func main() {
+	cfg, _ := config.Load("config.json")
+	tg := telegram.NewClient(cfg.TelegramTimeout, cfg.UserAgent)
+	store, _ := storage.NewSQLiteStore(cfg.SQLitePath)
+	defer store.Close()
+
+	svc := bridge.NewService(cfg, tg, store, &http.Client{Timeout: cfg.BackendTimeout}, slog.Default())
+
+	// HealthHandler returns an http.Handler you can mount on your own mux
+	http.Handle("/healthz", svc.HealthHandler())
+
+	svc.Run(context.Background())
+}
+```
+
+### Example: use only the Telegram client
+
+```go
+tg := telegram.NewClient(10*time.Second, "my-app/1.0")
+
+info, _ := tg.GetWebhookInfo(ctx, token)
+me, _ := tg.GetMe(ctx, token)
+updates, _ := tg.GetUpdates(ctx, token, telegram.GetUpdatesRequest{Offset: 0, Limit: 100, Timeout: 50})
+```
+
+### Key interfaces
+
+The `bridge` package defines two interfaces for dependency injection:
+
+- `bridge.TelegramAPI` — Telegram API operations (implement to mock or replace the client)
+- `bridge.StateStore` — offset persistence and interaction logging (implement for custom storage)
 
 ## Prerequisites
 

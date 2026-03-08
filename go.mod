@@ -1,4 +1,4 @@
-module tg-getupdates-to-webhook
+module github.com/skrashevich/tg-getupdates-to-webhook
 
 go 1.26.0
 

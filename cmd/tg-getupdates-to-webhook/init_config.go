@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"tg-getupdates-to-webhook/internal/bootstrap"
-	"tg-getupdates-to-webhook/internal/telegram"
+	"github.com/skrashevich/tg-getupdates-to-webhook/bootstrap"
+	"github.com/skrashevich/tg-getupdates-to-webhook/telegram"
 )
 
 const (

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"tg-getupdates-to-webhook/internal/config"
+	"github.com/skrashevich/tg-getupdates-to-webhook/config"
 )
 
 type runtimeMetrics struct {

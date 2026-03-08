@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	"tg-getupdates-to-webhook/internal/bridge"
-	"tg-getupdates-to-webhook/internal/config"
-	"tg-getupdates-to-webhook/internal/storage"
-	"tg-getupdates-to-webhook/internal/telegram"
+	"github.com/skrashevich/tg-getupdates-to-webhook/bridge"
+	"github.com/skrashevich/tg-getupdates-to-webhook/config"
+	"github.com/skrashevich/tg-getupdates-to-webhook/storage"
+	"github.com/skrashevich/tg-getupdates-to-webhook/telegram"
 )
 
 func main() {

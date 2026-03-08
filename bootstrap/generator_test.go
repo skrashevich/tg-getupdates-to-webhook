@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"tg-getupdates-to-webhook/internal/telegram"
+	"github.com/skrashevich/tg-getupdates-to-webhook/telegram"
 )
 
 func TestGenerateConfigAndSwitchSuccess(t *testing.T) {
