@@ -1,5 +1,11 @@
 # tg-getupdates-to-webhook
 
+<!-- badges:start -->
+[![GitHub stars](https://img.shields.io/github/stars/skrashevich/tg-getupdates-to-webhook?style=flat-square)](https://github.com/skrashevich/tg-getupdates-to-webhook/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/skrashevich/tg-getupdates-to-webhook?style=flat-square)](https://github.com/skrashevich/tg-getupdates-to-webhook/commits/main)
+<!-- badges:end -->
+
+
 Compatibility bridge for legacy Telegram bots that only support webhook handlers.
 The service reads updates via Telegram `getUpdates`, forwards them to your existing backend as webhook-like `POST`, and proxies webhook-style method responses back to Telegram.
 
